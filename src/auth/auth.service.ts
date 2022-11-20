@@ -1,20 +1,28 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as users from '../users.json';
-import { AuthDto } from './dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  siginLocal(dto: AuthDto) {
-    console.log(dto);
-    const user = users.find((_user) => _user.email === dto.email);
-    if (!user) throw new UnauthorizedException('Credentials incorrect');
-    if (user.password !== dto.password) {
-      throw new UnauthorizedException('Credentials incorrect');
+  constructor(private jwtService: JwtService) {}
+
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await users.find((_user) => _user.email === email);
+    if (user && user.password === password) {
+      const { password, ...result } = user;
+      return result;
     }
-    return user;
+    return null;
   }
 
-  signupLocal(dto: AuthDto) {
-    return 1;
+  async login(user) {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      type: 'user'
+    };
+    return {
+      access_token: this.jwtService.sign(payload)
+    };
   }
 }
